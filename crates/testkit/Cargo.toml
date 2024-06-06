@@ -34,7 +34,6 @@ http2 = ["hyper/http2", "axum/http2", "hyper-util/http2"]
 default = ["macros"]
 
 [dependencies]
-async-trait = "0.1.80"
 axum = "0.7.5"
 charted-testkit-macros = { version = "0.1.0", path = "../macros", optional = true }
 http-body-util = "0.1.1"

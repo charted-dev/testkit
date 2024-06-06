@@ -235,25 +235,23 @@ impl TestContext {
                         {
                             eprintln!("failed to serve HTTP/1 connection: {err:#}");
                         }
-                    } else {
-                        if http2 {
-                            #[cfg(feature = "http2")]
-                            if let Err(err) = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
-                                .serve_connection(socket, hyper_service)
-                                .await
-                            {
-                                eprintln!("failed to serve HTTP/2 connection: {err:#}");
-                            }
-                        } else if http1 {
-                            if let Err(err) = hyper::server::conn::http1::Builder::new()
-                                .serve_connection(socket, hyper_service)
-                                .await
-                            {
-                                eprintln!("failed to serve HTTP/1 connection: {err:#}");
-                            }
-                        } else {
-                            panic!("unable to serve connection due to no HTTP stream to process");
+                    } else if http2 {
+                        #[cfg(feature = "http2")]
+                        if let Err(err) = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                            .serve_connection(socket, hyper_service)
+                            .await
+                        {
+                            eprintln!("failed to serve HTTP/2 connection: {err:#}");
                         }
+                    } else if http1 {
+                        if let Err(err) = hyper::server::conn::http1::Builder::new()
+                            .serve_connection(socket, hyper_service)
+                            .await
+                        {
+                            eprintln!("failed to serve HTTP/1 connection: {err:#}");
+                        }
+                    } else {
+                        panic!("unable to serve connection due to no HTTP stream to process");
                     }
                 });
             }
