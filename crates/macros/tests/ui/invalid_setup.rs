@@ -19,26 +19,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod attr;
-mod expand;
-
-use proc_macro::TokenStream;
-use syn::{parse_macro_input, ItemFn};
-
-/// Represents a procedural attribute macro that does the heavy lifting of `charted_testkit` for you. This macro
-/// also manages:
-///
-/// * setup functions, where a `fn(&TestContext) -> Result<(), Box<dyn ::std::error::Error>>` is called on each
-///   test to set it up
-/// * teardown functions, where a `fn(&TestContext) -> Result<(), Box<dyn ::std::error::Error>>` is called when
-///   a test is done being executed
-#[proc_macro_attribute]
-pub fn test(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    let body = parse_macro_input!(item as ItemFn);
-    let attrs = match syn::parse::<attr::Attr>(attrs) {
-        Ok(attrs) => attrs,
-        Err(e) => return e.into_compile_error().into(),
-    };
-
-    expand::test(body, attrs).into()
+#[charted_testkit_macros::test(setup = 123)]
+fn __testcase2(ctx: &TestContext) -> Result<(), ()> {
+    Ok(())
 }
+
+#[charted_testkit_macros::test(setup = [123])]
+fn __testcase3(ctx: &TestContext) -> Result<(), ()> {
+    Ok(())
+}
+
+#[charted_testkit_macros::test(setup = [true])]
+fn __testcase2(ctx: &TestContext) -> Result<(), ()> {
+    Ok(())
+}
+
+fn main() {}

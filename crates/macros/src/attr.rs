@@ -54,14 +54,26 @@ macro_rules! err {
 mod kw {
     syn::custom_keyword!(containers);
     syn::custom_keyword!(teardown);
+    syn::custom_keyword!(router);
     syn::custom_keyword!(setup);
 }
 
-#[derive(Default)]
 pub struct Attr {
     pub containers: Vec<Path>,
     pub teardown: Option<Path>,
+    pub router: Path,
     pub setup: Option<Path>,
+}
+
+impl Default for Attr {
+    fn default() -> Self {
+        Attr {
+            containers: Default::default(),
+            teardown: Default::default(),
+            router: router_path(),
+            setup: Default::default(),
+        }
+    }
 }
 
 impl Parse for Attr {
@@ -111,31 +123,15 @@ impl Parse for Attr {
 
                 if !input.peek(Token![=]) {
                     me.teardown = Some(PathSegment::from(Ident::new("teardown", Span::call_site())).into());
-                    if !input.is_empty() {
-                        input.parse::<Token![,]>()?;
-                    }
+                    comma_if_not_empty(input)?;
 
                     continue;
                 }
 
                 input.parse::<Token![=]>()?;
 
-                let expr = input.parse::<Expr>()?;
-
-                if let Expr::Lit(ExprLit { lit: Lit::Str(s), .. }) = expr {
-                    me.teardown = Some(PathSegment::from(Ident::new(&s.value(), s.span())).into());
-                } else if let Expr::Path(ExprPath { path, .. }) = expr {
-                    me.teardown = Some(path);
-                } else {
-                    return Err(err!(
-                        expr.span(),
-                        "expected a literal string or valid path to a function for a teardown function"
-                    ));
-                }
-
-                if !input.is_empty() {
-                    input.parse::<Token![,]>()?;
-                }
+                me.teardown = Some(parse_literal_or_path(input)?);
+                comma_if_not_empty(input)?;
 
                 continue;
             } else if lookahead.peek(kw::setup) {
@@ -145,35 +141,34 @@ impl Parse for Attr {
 
                 // setup
                 // setup = "path"
-                // setup = module::to::setup
+                // setup = module::to::teardown
                 input.parse::<kw::setup>()?;
 
                 if !input.peek(Token![=]) {
-                    me.teardown = Some(PathSegment::from(Ident::new("setup", Span::call_site())).into());
-                    if !input.is_empty() {
-                        input.parse::<Token![,]>()?;
-                    }
+                    me.setup = Some(PathSegment::from(Ident::new("setup", Span::call_site())).into());
+                    comma_if_not_empty(input)?;
 
                     continue;
                 }
 
                 input.parse::<Token![=]>()?;
 
-                let expr = input.parse::<Expr>()?;
-                if let Expr::Lit(ExprLit { lit: Lit::Str(s), .. }) = expr {
-                    me.teardown = Some(PathSegment::from(Ident::new(&s.value(), s.span())).into());
-                } else if let Expr::Path(ExprPath { path, .. }) = expr {
-                    me.teardown = Some(path);
-                } else {
-                    return Err(err!(
-                        expr.span(),
-                        "expected a literal string or valid path to a function for a teardown function"
-                    ));
+                me.setup = Some(parse_literal_or_path(input)?);
+                comma_if_not_empty(input)?;
+
+                continue;
+            } else if lookahead.peek(kw::router) {
+                // router
+                // router = "path_to_router"
+                // router = path_to_router_also
+                input.parse::<kw::router>()?;
+                if !input.peek(Token![=]) {
+                    comma_if_not_empty(input)?;
+                    continue;
                 }
 
-                if !input.is_empty() {
-                    input.parse::<Token![,]>()?;
-                }
+                me.router = parse_literal_or_path(input)?;
+                comma_if_not_empty(input)?;
 
                 continue;
             } else {
@@ -183,4 +178,30 @@ impl Parse for Attr {
 
         Ok(me)
     }
+}
+
+fn router_path() -> Path {
+    (PathSegment::from(Ident::new("router", Span::call_site()))).into()
+}
+
+fn parse_literal_or_path(input: ParseStream) -> Result<Path> {
+    let expr = input.parse::<Expr>()?;
+    if let Expr::Lit(ExprLit { lit: Lit::Str(s), .. }) = expr {
+        Ok(PathSegment::from(Ident::new(&s.value(), s.span())).into())
+    } else if let Expr::Path(ExprPath { path, .. }) = expr {
+        Ok(path)
+    } else {
+        return Err(err!(
+            expr.span(),
+            "expected a literal string or valid path to a function for a teardown function"
+        ));
+    }
+}
+
+fn comma_if_not_empty(input: ParseStream) -> Result<()> {
+    if !input.is_empty() {
+        input.parse::<Token![,]>()?;
+    }
+
+    Ok(())
 }

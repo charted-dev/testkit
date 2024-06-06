@@ -19,26 +19,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod attr;
-mod expand;
+use axum::{body::Bytes, http::Method};
+use charted_testkit::{assert_successful, consume_body, TestContext};
+use charted_testkit_macros::test;
 
-use proc_macro::TokenStream;
-use syn::{parse_macro_input, ItemFn};
+async fn setup(_ctx: &TestContext) {
+    println!("in setup function!!!");
+}
 
-/// Represents a procedural attribute macro that does the heavy lifting of `charted_testkit` for you. This macro
-/// also manages:
-///
-/// * setup functions, where a `fn(&TestContext) -> Result<(), Box<dyn ::std::error::Error>>` is called on each
-///   test to set it up
-/// * teardown functions, where a `fn(&TestContext) -> Result<(), Box<dyn ::std::error::Error>>` is called when
-///   a test is done being executed
-#[proc_macro_attribute]
-pub fn test(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    let body = parse_macro_input!(item as ItemFn);
-    let attrs = match syn::parse::<attr::Attr>(attrs) {
-        Ok(attrs) => attrs,
-        Err(e) => return e.into_compile_error().into(),
-    };
+async fn hello() -> &'static str {
+    "Hello, world?"
+}
 
-    expand::test(body, attrs).into()
+fn router() -> axum::Router {
+    axum::Router::new().route("/", axum::routing::get(hello))
+}
+
+#[test(setup)]
+async fn usage(ctx: &TestContext) {
+    let res = ctx
+        .request("/", Method::GET, None::<axum::body::Bytes>, |_| {})
+        .await
+        .expect("unable to send request");
+
+    assert_successful!(res);
+
+    let body = consume_body!(res);
+    assert_eq!(body, Bytes::from_static(b"Hello, world?"));
 }

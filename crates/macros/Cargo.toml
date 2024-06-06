@@ -35,3 +35,9 @@ proc-macro = true
 proc-macro2 = "1.0.83"
 quote = "1.0.36"
 syn = "2.0.66"
+
+[dev-dependencies]
+axum = "0.7.5"
+charted-testkit.path = "../testkit"
+trybuild = "1.0.96"
+tokio = { version = "1.37.0", features = ["rt"] }

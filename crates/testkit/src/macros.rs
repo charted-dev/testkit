@@ -72,7 +72,7 @@ macro_rules! assert_status_code {
 #[macro_export]
 macro_rules! consume_body {
     ($res:expr) => {{
-        use ::http_body_util::BodyExt;
+        use $crate::__private::BodyExt;
 
         let collected = ($res).collect().await.expect("failed to consume full body");
         collected.to_bytes()

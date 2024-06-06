@@ -1,0 +1,23 @@
+error: expected square brackets
+  --> ./tests/ui/invalid_container.rs:22:45
+   |
+22 | #[charted_testkit_macros::test(containers = "litstr")]
+   |                                             ^^^^^^^^
+
+error: expected square brackets
+  --> ./tests/ui/invalid_container.rs:27:45
+   |
+27 | #[charted_testkit_macros::test(containers = 123)]
+   |                                             ^^^
+
+error: expected a literal string or valid path to a function
+  --> ./tests/ui/invalid_container.rs:32:46
+   |
+32 | #[charted_testkit_macros::test(containers = [123])]
+   |                                              ^^^
+
+error: expected a literal string or valid path to a function
+  --> ./tests/ui/invalid_container.rs:37:46
+   |
+37 | #[charted_testkit_macros::test(containers = [true])]
+   |                                              ^^^^

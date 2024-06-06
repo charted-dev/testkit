@@ -29,12 +29,14 @@ license.workspace = true
 rust-version.workspace = true
 
 [features]
+macros = ["dep:charted-testkit-macros"]
 http2 = ["hyper/http2", "axum/http2", "hyper-util/http2"]
+default = ["macros"]
 
 [dependencies]
 async-trait = "0.1.80"
 axum = "0.7.5"
-charted-testkit-macros = { version = "0.1.0", path = "../macros" }
+charted-testkit-macros = { version = "0.1.0", path = "../macros", optional = true }
 http-body-util = "0.1.1"
 hyper = { version = "1.3.1", features = ["client", "server", "http1"] }
 hyper-util = { version = "0.1.3", features = ["tokio", "client"] }

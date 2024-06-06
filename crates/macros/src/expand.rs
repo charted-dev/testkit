@@ -22,39 +22,103 @@
 #![allow(unused)]
 
 use crate::attr::Attr;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{token::Brace, ItemFn, Stmt};
+use syn::{punctuated::Punctuated, token::Brace, Ident, ItemFn, ReturnType, Stmt};
 
-struct Body<'a> {
-    brace_token: Brace,
-    stmts: &'a [Stmt],
-}
+pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
+    let name = &body.sig.ident;
+    let inputs = &body.sig.inputs;
+    let attr = &body.attrs;
+    let ret = match body.sig.output {
+        ReturnType::Default => quote!(),
+        ReturnType::Type(ptr_tkn, ref ty) => quote!(#ptr_tkn #ty),
+    };
 
-impl ToTokens for Body<'_> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.brace_token.surround(tokens, |tt| {
-            for stmt in self.stmts {
-                stmt.to_tokens(tt);
+    let body = &body.block;
+    let router = &attrs.router;
+    let setup = match attrs.setup {
+        Some(path) => quote!(#path(&ctx).await;),
+        None => quote!(),
+    };
+
+    let teardown = match attrs.teardown {
+        Some(path) => quote!(#path(&ctx).await;),
+        None => quote!(),
+    };
+
+    let containers = attrs.containers.iter().map(|path| {
+        quote! {
+            ctx.containers_mut().push(#path(&ctx).await);
+        }
+    });
+
+    quote! {
+        #[::core::prelude::v1::test]
+        #(#attr)*
+        fn #name() #ret {
+            async fn #name(#inputs) #ret {
+                #body
             }
-        });
+
+            let rt = ::tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("failed to create Tokio runtime?!");
+
+            rt.block_on(async {
+                // Create our TestContext
+                let mut ctx = ::charted_testkit::TestContext::default();
+
+                #setup
+                #(#containers)*
+                ctx.serve(#router()).await;
+
+                let __fn_ptr: fn(_) -> _ = #name;
+                let res = __fn_ptr(&ctx).await;
+
+                #teardown
+                res
+            })
+        }
     }
 }
 
-pub fn test(mut body: ItemFn, attrs: Attr) -> proc_macro2::TokenStream {
-    body.sig.asyncness = None;
+//     let new_body = {
+//         let __setup = match attrs.setup {
+//             Some(path) => quote!(#path(&ctx).await;),
+//             None => quote!(),
+//         };
 
-    let name = &body.sig.ident;
+//         let __teardown = match attrs.teardown {
+//             Some(path) => quote!(#path(&ctx).await;),
+//             None => quote!(),
+//         };
 
-    // Build a Tokio runtime in vein of `#[tokio::test]`
-    let rt = quote! {
-        ::tokio::runtime::Builder::new_multi_thread()
-    };
+//         let router = &attrs.router;
+//         quote! {
+//             let mut ctx = ::charted_testkit::TestContext::default();
+//             #__setup
 
-    let header = quote!(#[::core::prelude::v1::test]);
-    let endgoal = quote! {
-        #rt.enable_all().build().expect("failed to build runtime")
-    };
+//             ctx.serve(#router()).await;
+//             async fn __our_code(ctx: &::charted_testkit::TestContext) #old_body
 
-    quote! {}
-}
+//             __our_code(&ctx).await;
+//             #__teardown
+//         }
+//     };
+
+//     let header = quote!(#[::core::prelude::v1::test]);
+//     let vis = body.vis;
+
+//     quote! {
+//         #header
+//         pub fn #name() {
+//             #rt
+//                 .enable_all()
+//                 .build()
+//                 .expect("failed to build runtime")
+//                 .block_on(async { #new_body });
+//         }
+//     }
+// }

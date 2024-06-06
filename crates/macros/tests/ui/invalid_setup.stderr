@@ -1,0 +1,17 @@
+error: expected a literal string or valid path to a function for a teardown function
+  --> ./tests/ui/invalid_setup.rs:22:40
+   |
+22 | #[charted_testkit_macros::test(setup = 123)]
+   |                                        ^^^
+
+error: expected a literal string or valid path to a function for a teardown function
+  --> ./tests/ui/invalid_setup.rs:27:40
+   |
+27 | #[charted_testkit_macros::test(setup = [123])]
+   |                                        ^^^^^
+
+error: expected a literal string or valid path to a function for a teardown function
+  --> ./tests/ui/invalid_setup.rs:32:40
+   |
+32 | #[charted_testkit_macros::test(setup = [true])]
+   |                                        ^^^^^^

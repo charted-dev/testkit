@@ -22,7 +22,7 @@
 #![doc(html_logo_url = "https://cdn.floofy.dev/images/trans.png")]
 #![doc = include_str!("../README.md")]
 
-#[allow(unused)]
+#[cfg(feature = "macros")]
 pub use charted_testkit_macros::*;
 
 mod macros;
@@ -221,7 +221,7 @@ impl TestContext {
 
                     if allows_both {
                         #[cfg(feature = "http2")]
-                        if let Err(err) = hyper_util::server::conn::auto::Builder(TokioExecutor::new())
+                        if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                             .serve_connection_with_upgrades(socket, hyper_service)
                             .await
                         {
@@ -238,7 +238,7 @@ impl TestContext {
                     } else {
                         if http2 {
                             #[cfg(feature = "http2")]
-                            if let Err(err) = hyper::server::conn::http2::Builder::new()
+                            if let Err(err) = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
                                 .serve_connection(socket, hyper_service)
                                 .await
                             {
@@ -259,6 +259,12 @@ impl TestContext {
             }
         }));
     }
+}
+
+// Private APIs used by macros; do not use!
+#[doc(hidden)]
+pub mod __private {
+    pub use http_body_util::BodyExt;
 }
 
 #[cfg(test)]
