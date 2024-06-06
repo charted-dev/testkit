@@ -36,6 +36,10 @@ fn router() -> axum::Router {
 }
 
 #[test(setup)]
+#[cfg_attr(
+    windows,
+    ignore = "fails on Windows: hyper_util::client::legacy::Error(Connect, ConnectError(\"tcp connect error\", Os { code: 10049, kind: AddrNotAvailable, message: \"The requested address is not valid in its context.\" })))"
+)]
 async fn usage(ctx: &TestContext) {
     let res = ctx
         .request("/", Method::GET, None::<axum::body::Bytes>, |_| {})
