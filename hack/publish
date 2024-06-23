@@ -30,7 +30,7 @@ fi
 
 crates=("testkit" "testkit-macros")
 
-function remi::cargo::publish {
+function testkit::cargo::publish {
     for package in "${crates[@]}"; do
         echo "[testkit:cargo:publish] Publishing package $package"
         cargo publish --package "$package" --token "$CARGO_REGISTRY_TOKEN"
