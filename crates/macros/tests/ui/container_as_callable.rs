@@ -19,13 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#[test]
-fn ui() {
-    let cases = trybuild::TestCases::new();
-
-    cases.compile_fail("./tests/ui/invalid_container.rs");
-    cases.compile_fail("./tests/ui/invalid_teardown.rs");
-    cases.compile_fail("./tests/ui/invalid_setup.rs");
-
-    cases.pass("./tests/ui/container_as_callable.rs");
+async fn mycontainer() -> String {
+    String::from("weow")
 }
+
+#[charted_testkit_macros::test(containers = [mycontainer()])]
+fn __testcase(ctx: &TestContext) -> Result<(), ()> {
+    Ok(())
+}
+
+fn main() {}

@@ -21,6 +21,7 @@
 
 use proc_macro2::Span;
 
+use syn::ExprCall;
 #[allow(unused_imports)]
 use syn::{
     bracketed,
@@ -32,6 +33,7 @@ use syn::{
 
 macro_rules! err {
     ($span:expr, $msg:literal) => {{
+        #[allow(unused_imports)]
         use syn::spanned::Spanned;
 
         ::syn::Error::new($span, $msg)
@@ -58,22 +60,17 @@ mod kw {
     syn::custom_keyword!(setup);
 }
 
-pub struct Attr {
-    pub containers: Vec<Path>,
-    pub teardown: Option<Path>,
-    pub router: Path,
-    pub setup: Option<Path>,
+pub(crate) enum PathOrExpr {
+    Path(Path),
+    Callable(ExprCall),
 }
 
-impl Default for Attr {
-    fn default() -> Self {
-        Attr {
-            containers: Default::default(),
-            teardown: Default::default(),
-            router: router_path(),
-            setup: Default::default(),
-        }
-    }
+#[derive(Default)]
+pub struct Attr {
+    pub containers: Vec<PathOrExpr>,
+    pub teardown: Option<Path>,
+    pub router: Option<Path>,
+    pub setup: Option<Path>,
 }
 
 impl Parse for Attr {
@@ -94,13 +91,15 @@ impl Parse for Attr {
                 for expr in Punctuated::<Expr, Token![,]>::parse_terminated(&content)? {
                     if let Expr::Lit(ExprLit { lit: Lit::Str(s), .. }) = expr {
                         let ident = Ident::new(&s.value(), s.span());
-                        paths.push((PathSegment::from(ident)).into());
+                        paths.push(PathOrExpr::Path((PathSegment::from(ident)).into()));
                     } else if let Expr::Path(ExprPath { path, .. }) = expr {
-                        paths.push(path);
+                        paths.push(PathOrExpr::Path(path));
+                    } else if let Expr::Call(callable) = expr {
+                        paths.push(PathOrExpr::Callable(callable));
                     } else {
                         return Err(err!(
                             expr.span(),
-                            "expected a literal string or valid path to a function"
+                            "expected a literal string, valid path to a function, or a function call"
                         ));
                     }
                 }
@@ -158,16 +157,22 @@ impl Parse for Attr {
 
                 continue;
             } else if lookahead.peek(kw::router) {
+                if me.router.is_some() {
+                    return Err(err!(Span::call_site(), "router is already defined"));
+                }
+
                 // router
                 // router = "path_to_router"
                 // router = path_to_router_also
                 input.parse::<kw::router>()?;
                 if !input.peek(Token![=]) {
+                    me.router = Some(router_path());
+
                     comma_if_not_empty(input)?;
                     continue;
                 }
 
-                me.router = parse_literal_or_path(input)?;
+                me.router = Some(parse_literal_or_path(input)?);
                 comma_if_not_empty(input)?;
 
                 continue;
@@ -181,7 +186,7 @@ impl Parse for Attr {
 }
 
 fn router_path() -> Path {
-    (PathSegment::from(Ident::new("router", Span::call_site()))).into()
+    PathSegment::from(Ident::new("router", Span::call_site())).into()
 }
 
 fn parse_literal_or_path(input: ParseStream) -> Result<Path> {

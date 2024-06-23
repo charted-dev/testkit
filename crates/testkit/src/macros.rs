@@ -78,3 +78,40 @@ macro_rules! consume_body {
         collected.to_bytes()
     }};
 }
+
+/// Assertion macro to indicate that a [`Response`][axum::http::response::Response] has the header it needs.
+///
+/// ## Example
+/// ```
+/// # use axum::http::{response::Response, StatusCode, header};
+/// #
+/// let res = Response::builder()
+///     .status(StatusCode::OK)
+///     .header("Accept", "application/json")
+///     .body(())
+///     .expect("response to be avaliable");
+///
+/// charted_testkit::assert_has_header!(res, header::ACCEPT);
+/// ```
+#[macro_export]
+macro_rules! assert_has_header {
+    ($res:expr, $header:expr) => {
+        assert!($res.headers().get($header).is_some());
+    };
+}
+
+/// Assertion macro to indicate that a [`Response`][axum::http::response::Response] doesn't have the header it needs.
+///
+/// ## Example
+/// ```
+/// # use axum::http::{response::Response, StatusCode, header};
+/// #
+/// let res = Response::builder().status(StatusCode::OK).body(()).expect("response to be avaliable");
+/// charted_testkit::assert_doesnt_have_header!(res, header::ACCEPT);
+/// ```
+#[macro_export]
+macro_rules! assert_doesnt_have_header {
+    ($res:expr, $header:expr) => {
+        assert!($res.headers().get($header).is_none());
+    };
+}

@@ -35,7 +35,7 @@ fn router() -> axum::Router {
     axum::Router::new().route("/", axum::routing::get(hello))
 }
 
-#[test(setup)]
+#[test(setup, router)]
 #[cfg_attr(
     windows,
     ignore = "fails on Windows: hyper_util::client::legacy::Error(Connect, ConnectError(\"tcp connect error\", Os { code: 10049, kind: AddrNotAvailable, message: \"The requested address is not valid in its context.\" })))"

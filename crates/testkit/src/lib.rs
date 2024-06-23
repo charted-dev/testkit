@@ -128,7 +128,7 @@ impl TestContext {
     /// Sends a request to the ephemeral server and returns a [`ResponseFuture`].
     ///
     /// ## Example
-    /// ```rust
+    /// ```rust,no_run
     /// # use charted_testkit::TestContext;
     /// # use axum::{routing, http::Method, body::Bytes};
     /// #

@@ -47,11 +47,22 @@ pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
         None => quote!(),
     };
 
-    let containers = attrs.containers.iter().map(|path| {
-        quote! {
-            ctx.containers_mut().push(#path(&ctx).await);
-        }
+    let containers = attrs.containers.iter().map(|path| match path {
+        crate::attr::PathOrExpr::Path(path) => quote!(ctx.containers_mut().push({
+            let container = #path(&ctx).await;
+            Box::new(container)
+        })),
+
+        crate::attr::PathOrExpr::Callable(callable) => quote!(ctx.containers_mut().push({
+            let container = #callable;
+            Box::new(container)
+        })),
     });
+
+    let serve = match attrs.router {
+        Some(ref router) => quote!(ctx.serve(#router()).await;),
+        None => quote!(),
+    };
 
     quote! {
         #[::core::prelude::v1::test]
@@ -72,7 +83,7 @@ pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
 
                 #setup
                 #(#containers)*
-                ctx.serve(#router()).await;
+                #serve
 
                 let __fn_ptr: fn(_) -> _ = #name;
                 let res = __fn_ptr(&ctx).await;
@@ -83,42 +94,3 @@ pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
         }
     }
 }
-
-//     let new_body = {
-//         let __setup = match attrs.setup {
-//             Some(path) => quote!(#path(&ctx).await;),
-//             None => quote!(),
-//         };
-
-//         let __teardown = match attrs.teardown {
-//             Some(path) => quote!(#path(&ctx).await;),
-//             None => quote!(),
-//         };
-
-//         let router = &attrs.router;
-//         quote! {
-//             let mut ctx = ::charted_testkit::TestContext::default();
-//             #__setup
-
-//             ctx.serve(#router()).await;
-//             async fn __our_code(ctx: &::charted_testkit::TestContext) #old_body
-
-//             __our_code(&ctx).await;
-//             #__teardown
-//         }
-//     };
-
-//     let header = quote!(#[::core::prelude::v1::test]);
-//     let vis = body.vis;
-
-//     quote! {
-//         #header
-//         pub fn #name() {
-//             #rt
-//                 .enable_all()
-//                 .build()
-//                 .expect("failed to build runtime")
-//                 .block_on(async { #new_body });
-//         }
-//     }
-// }
