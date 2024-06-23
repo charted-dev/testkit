@@ -28,12 +28,12 @@ if [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
     exit 1
 fi
 
-crates=("testkit" "testkit-macros")
+crates=("charted-testkit-macros" "charted-testkit")
 
 function testkit::cargo::publish {
     for package in "${crates[@]}"; do
         echo "[testkit:cargo:publish] Publishing package $package"
-        cargo publish --package "$package" --token "$CARGO_REGISTRY_TOKEN"
+        cargo publish --package "$package" --token "$CARGO_REGISTRY_TOKEN" --allow-dirty
         sleep 5 # do even more sleeping
     done
 }
