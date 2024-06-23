@@ -10,13 +10,13 @@ error: expected square brackets
 27 | #[charted_testkit_macros::test(containers = 123)]
    |                                             ^^^
 
-error: expected a literal string or valid path to a function
+error: expected a literal string, valid path to a function, or a function call
   --> ./tests/ui/invalid_container.rs:32:46
    |
 32 | #[charted_testkit_macros::test(containers = [123])]
    |                                              ^^^
 
-error: expected a literal string or valid path to a function
+error: expected a literal string, valid path to a function, or a function call
   --> ./tests/ui/invalid_container.rs:37:46
    |
 37 | #[charted_testkit_macros::test(containers = [true])]

@@ -51,12 +51,12 @@ pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
         crate::attr::PathOrExpr::Path(path) => quote!(ctx.containers_mut().push({
             let container = #path(&ctx).await;
             Box::new(container)
-        })),
+        });),
 
         crate::attr::PathOrExpr::Callable(callable) => quote!(ctx.containers_mut().push({
             let container = #callable;
             Box::new(container)
-        })),
+        });),
     });
 
     let serve = match attrs.router {
