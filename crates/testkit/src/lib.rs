@@ -55,15 +55,7 @@ pub struct TestContext {
 
 impl Debug for TestContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut st = f.debug_struct("TestContext");
-        st.field("http1", &self.http1).field("local_addr", &self.addr);
-
-        #[cfg(feature = "http2")]
-        {
-            st = st.field("http1", &self.http2);
-        }
-
-        st.finish()
+        f.debug_struct("TestContext").field("local_addr", &self.addr).finish()
     }
 }
 
