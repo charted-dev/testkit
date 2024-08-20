@@ -34,30 +34,49 @@ use hyper_util::{
     client::legacy::{connect::HttpConnector, Client, ResponseFuture},
     rt::{TokioExecutor, TokioIo},
 };
-use std::{any::Any, net::SocketAddr};
-use testcontainers::{ContainerAsync, Image};
+use std::{fmt::Debug, net::SocketAddr};
 use tokio::{net::TcpListener, task::JoinHandle};
 use tower::{Service, ServiceExt};
 
 pub struct TestContext {
-    containers: Vec<Box<dyn Any + Send + Sync>>,
     _handle: Option<JoinHandle<()>>,
     client: Client<HttpConnector, http_body_util::Full<Bytes>>,
     http1: bool,
     addr: Option<SocketAddr>,
 
+    // TODO(@auguwu): should `containers` be a `HashMap<TypeId, Box<dyn Any>>` to easily
+    //                identify a image?
+    #[cfg(feature = "testcontainers")]
+    containers: Vec<Box<dyn ::std::any::Any + Send + Sync>>,
+
     #[cfg(feature = "http2")]
     http2: bool,
+}
+
+impl Debug for TestContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut st = f.debug_struct("TestContext");
+        st.field("http1", &self.http1).field("local_addr", &self.addr);
+
+        #[cfg(feature = "http2")]
+        {
+            st = st.field("http1", &self.http2);
+        }
+
+        st.finish()
+    }
 }
 
 impl Default for TestContext {
     fn default() -> Self {
         TestContext {
-            containers: Vec::new(),
             _handle: None,
             client: Client::builder(TokioExecutor::new()).build_http(),
             http1: true,
             addr: None,
+
+            #[cfg(feature = "testcontainers")]
+            containers: Vec::new(),
 
             #[cfg(feature = "http2")]
             http2: false,
@@ -93,13 +112,19 @@ impl TestContext {
     }
 
     /// Returns a mutable [`Vec`] of allocated type-erased objects that should be [`ContainerAsync`].
-    pub fn containers_mut(&mut self) -> &mut Vec<Box<dyn Any + Send + Sync>> {
+    #[cfg(feature = "testcontainers")]
+    pub fn containers_mut(&mut self) -> &mut Vec<Box<dyn ::std::any::Any + Send + Sync>> {
         &mut self.containers
     }
 
     /// Returns a [`ContainerAsync`] of a spawned container that can be accessed.
-    pub fn container<I: Image + 'static>(&self) -> Option<&ContainerAsync<I>> {
-        match self.containers.iter().find(|x| x.is::<ContainerAsync<I>>()) {
+    #[cfg(feature = "testcontainers")]
+    pub fn container<I: ::testcontainers::Image + 'static>(&self) -> Option<&::testcontainers::ContainerAsync<I>> {
+        match self
+            .containers
+            .iter()
+            .find(|x| x.is::<::testcontainers::ContainerAsync<I>>())
+        {
             Some(container) => container.downcast_ref(),
             None => None,
         }
@@ -184,7 +209,7 @@ impl TestContext {
         #[cfg(not(feature = "http2"))]
         let http2 = false;
 
-        let listener = TcpListener::bind("0.0.0.0:0")
+        let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("failed to create tcp listener");
 
@@ -283,8 +308,25 @@ mod tests {
             .expect("unable to send request");
 
         assert_successful!(res);
+        assert_eq!(consume_body!(res), Bytes::from_static(b"Hello, world!"));
+    }
 
-        let body = consume_body!(res);
-        assert_eq!(body, Bytes::from_static(b"Hello, world!"));
+    #[cfg(feature = "testcontainers")]
+    #[tokio::test]
+    #[cfg_attr(
+        not(target_os = "linux"),
+        ignore = "this will only probably work on Linux (requires a working Docker daemon)"
+    )]
+    async fn test_testcontainers_in_ctx() {
+        use testcontainers::runners::AsyncRunner;
+
+        let mut ctx = TestContext::default();
+        let valkey = ::testcontainers::GenericImage::new("valkey/valkey", "7.2.6")
+            .start()
+            .await
+            .expect("failed to start valkey image");
+
+        ctx.containers_mut().push(Box::new(valkey));
+        assert!(ctx.container::<::testcontainers::GenericImage>().is_some());
     }
 }

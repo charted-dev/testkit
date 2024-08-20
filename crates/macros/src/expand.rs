@@ -24,7 +24,7 @@
 use crate::attr::Attr;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{punctuated::Punctuated, token::Brace, Ident, ItemFn, ReturnType, Stmt};
+use syn::{punctuated::Punctuated, spanned::Spanned, token::Brace, Ident, ItemFn, ReturnType, Stmt};
 
 pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
     let name = &body.sig.ident;
@@ -46,6 +46,14 @@ pub fn test(body: ItemFn, attrs: Attr) -> TokenStream {
         Some(path) => quote!(#path(&ctx).await;),
         None => quote!(),
     };
+
+    if !cfg!(feature = "testcontainers") && !attrs.containers.is_empty() {
+        return syn::Error::new(
+            body.span(),
+            "`testcontainers` feature is not enabled and you passed in a list of containers to startup",
+        )
+        .into_compile_error();
+    }
 
     let containers = attrs.containers.iter().map(|path| match path {
         crate::attr::PathOrExpr::Path(path) => quote!(ctx.containers_mut().push({

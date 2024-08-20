@@ -24,7 +24,7 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 repository = "https://github.com/charted-dev/testkit"
 license = "MIT"
 edition = "2021"

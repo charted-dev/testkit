@@ -31,13 +31,17 @@ rust-version.workspace = true
 [lib]
 proc-macro = true
 
+[features]
+testcontainers = []
+default = []
+
 [dependencies]
-proc-macro2 = "1.0.83"
+proc-macro2 = "1.0.86"
 quote = "1.0.36"
-syn = { version = "2.0.66", features = ["full"] }
+syn = { version = "2.0.75", features = ["full"] }
 
 [dev-dependencies]
 axum = "0.7.5"
-charted-testkit = { version = "0.1.0", path = "../testkit" }
+charted-testkit = { version = "=0.1.1", path = "../testkit" }
 trybuild = "1.0.96"
 tokio = { version = "1.37.0", features = ["rt"] }
