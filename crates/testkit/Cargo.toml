@@ -36,7 +36,7 @@ testcontainers = [
 
 macros = ["dep:charted-testkit-macros"]
 http2 = ["hyper/http2", "axum/http2", "hyper-util/http2"]
-default = ["macros", "testcontainers"]
+default = ["macros"]
 
 [dependencies]
 axum = "0.7.5"
