@@ -42,6 +42,6 @@ syn = { version = "2.0.75", features = ["full"] }
 
 [dev-dependencies]
 axum = "0.7.5"
-charted-testkit = { version = "=0.1.1", path = "../testkit" }
+charted-testkit = { version = "^0", path = "../testkit" }
 trybuild = "1.0.96"
 tokio = { version = "1.37.0", features = ["rt"] }
