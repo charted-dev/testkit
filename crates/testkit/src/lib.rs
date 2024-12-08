@@ -145,7 +145,7 @@ impl TestContext {
     /// Sends a request to the ephemeral server and returns a [`ResponseFuture`].
     ///
     /// ## Example
-    /// ```rust,no_run
+    /// ```no_run
     /// # use charted_testkit::TestContext;
     /// # use axum::{routing, http::Method, body::Bytes};
     /// #
@@ -159,7 +159,7 @@ impl TestContext {
     /// ctx.serve(axum::Router::new().route("/", routing::get(handler))).await;
     ///
     /// let res = ctx
-    ///     .request::<_, Bytes, _>("/", Method::GET, None, |_| {})
+    ///     .request("/", Method::GET, None, charted_testkit::noop_request)
     ///     .await
     ///     .expect("was unable to send request to ephermeral server");
     ///
@@ -265,6 +265,11 @@ impl TestContext {
     }
 }
 
+/// A empty function that can be used with [`TestContext::request`].
+pub fn noop_request(_: &mut Request<Full<Bytes>>) {
+    // should be empty.
+}
+
 // Private APIs used by macros; do not use!
 #[doc(hidden)]
 pub mod __private {
@@ -296,7 +301,7 @@ mod tests {
         ctx.serve(router()).await;
 
         let res = ctx
-            .request("/", Method::GET, None, |_| {})
+            .request("/", Method::GET, None, super::noop_request)
             .await
             .expect("unable to send request");
 
