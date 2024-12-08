@@ -167,16 +167,16 @@ impl TestContext {
     /// assert_eq!(charted_testkit::consume_body!(res), Bytes::from_static(b"Hello, world!"));
     /// # }
     /// ```
-    pub fn request<U: AsRef<str> + 'static, B: Into<Bytes>, F: Fn(&mut Request<Full<Bytes>>)>(
+    pub fn request<U: AsRef<str> + 'static, B: Into<Option<Bytes>>, F: Fn(&mut Request<Full<Bytes>>)>(
         &self,
         uri: U,
         method: Method,
-        body: Option<B>,
+        body: B,
         build: F,
     ) -> ResponseFuture {
         let addr = self.server_addr().expect("failed to get socket address");
 
-        let mut req = Request::<Full<Bytes>>::new(Full::new(body.map(Into::into).unwrap_or_default()));
+        let mut req = Request::<Full<Bytes>>::new(Full::new(body.into().unwrap_or_default()));
         *req.method_mut() = method;
         *req.uri_mut() = format!("http://{addr}{}", uri.as_ref())
             .parse()
@@ -268,6 +268,7 @@ impl TestContext {
 // Private APIs used by macros; do not use!
 #[doc(hidden)]
 pub mod __private {
+    pub use axum::http::header;
     pub use http_body_util::BodyExt;
 }
 
@@ -295,7 +296,7 @@ mod tests {
         ctx.serve(router()).await;
 
         let res = ctx
-            .request("/", Method::GET, None::<axum::body::Bytes>, |_| {})
+            .request("/", Method::GET, None, |_| {})
             .await
             .expect("unable to send request");
 

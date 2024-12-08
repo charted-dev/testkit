@@ -20,15 +20,11 @@
 // SOFTWARE.
 
 use proc_macro2::Span;
-
-use syn::ExprCall;
-#[allow(unused_imports)]
 use syn::{
     bracketed,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    spanned::Spanned as _,
-    Expr, ExprLit, ExprPath, Ident, Lit, Path, PathSegment, Result, Token,
+    Expr, ExprCall, ExprLit, ExprPath, Ident, Lit, Path, PathSegment, Result, Token,
 };
 
 macro_rules! err {
@@ -190,16 +186,12 @@ fn router_path() -> Path {
 }
 
 fn parse_literal_or_path(input: ParseStream) -> Result<Path> {
-    let expr = input.parse::<Expr>()?;
-    if let Expr::Lit(ExprLit { lit: Lit::Str(s), .. }) = expr {
-        Ok(PathSegment::from(Ident::new(&s.value(), s.span())).into())
-    } else if let Expr::Path(ExprPath { path, .. }) = expr {
-        Ok(path)
+    let ahead = input.fork();
+    if let Ok(Lit::Str(s)) = ahead.parse() {
+        let ident = Ident::new(&s.value(), s.span());
+        Ok(PathSegment::from(ident).into())
     } else {
-        return Err(err!(
-            expr.span(),
-            "expected a literal string or valid path to a function for a teardown function"
-        ));
+        input.parse()
     }
 }
 

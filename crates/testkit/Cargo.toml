@@ -40,7 +40,7 @@ default = ["macros"]
 
 [dependencies]
 axum = "0.7.5"
-charted-testkit-macros = { version = "=0.1.1", path = "../macros", optional = true }
+charted-testkit-macros = { version = "=0.1.2", path = "../macros", optional = true }
 http-body-util = "0.1.2"
 hyper = { version = "1.4.1", features = ["client", "server", "http1"] }
 hyper-util = { version = "0.1.7", features = [

@@ -36,6 +36,22 @@ macro_rules! assert_successful {
     };
 }
 
+/// Checks whenever if a [`Response`][axum::http::response::Response] failed.
+///
+/// ## Example
+/// ```rust
+/// # use axum::http::{response::Response, StatusCode};
+/// #
+/// let res = Response::builder().status(StatusCode::NOT_FOUND).body(()).expect("response to be avaliable");
+/// charted_testkit::assert_failure!(res);
+/// ```
+#[macro_export]
+macro_rules! assert_failure {
+    ($res:expr) => {
+        assert!(!($res).status().is_success());
+    };
+}
+
 /// Macro to easily assert if a given [response][axum::http::response::Response]'s status code
 /// is the same as one you provide.
 ///
@@ -95,6 +111,10 @@ macro_rules! consume_body {
 /// ```
 #[macro_export]
 macro_rules! assert_has_header {
+    ($res:expr, $header:ident) => {
+        $crate::assert_has_header!($res, $crate::__private::header::$header);
+    };
+
     ($res:expr, $header:expr) => {
         assert!($res.headers().get($header).is_some());
     };
@@ -111,6 +131,10 @@ macro_rules! assert_has_header {
 /// ```
 #[macro_export]
 macro_rules! assert_doesnt_have_header {
+    ($res:expr, $header:ident) => {
+        $crate::assert_has_header!($res, $crate::__private::header::$header);
+    };
+
     ($res:expr, $header:expr) => {
         assert!($res.headers().get($header).is_none());
     };
